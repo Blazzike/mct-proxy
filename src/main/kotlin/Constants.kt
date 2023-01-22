@@ -1,5 +1,5 @@
-import components.chatComponent.ChatComponent
+import api.Component
 
-val COMPONENTS = listOf(
-  ChatComponent()
+val COMPONENTS = listOf<Component>(
+//  TabListDecorations()
 )

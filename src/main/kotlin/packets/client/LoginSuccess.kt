@@ -47,9 +47,9 @@ public class Property(
 }
 
 class LoginSuccess(
-  private var uuid: UUID? = null,
-  private var username: String? = null,
-  private var properties: List<Property> = emptyList()
+  var uuid: UUID? = null,
+  var username: String? = null,
+  var properties: List<Property> = emptyList()
 ) : Packet() {
   companion object: PacketInfo<LoginSuccess>(0x02, PacketState.LOGIN)
 

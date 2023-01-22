@@ -1,10 +1,10 @@
 package api
 
+import models.Channel
+import models.User
 import packets.Packet
 import packets.PacketInfo
-import packets.PacketState
 import util.Reader
-import util.Writer
 import kotlin.reflect.full.createInstance
 
 typealias PacketInterceptorCallback<P> = (packet: PacketInterceptorEvent<P>) -> Unit
@@ -47,32 +47,36 @@ object PacketInterceptorManager {
   }
 
   fun handlePacket(
-    direction: Direction,
-    header: Reader.Header,
-    packetState: PacketState,
-    packetData: ByteArray,
-    writer: Writer
-  ): Boolean {
-    val map = when (direction) {
-      Direction.FROM_SERVER -> fromServer
-      Direction.FROM_CLIENT -> fromClient
+    channel: Channel,
+    header: Reader.Header
+  ) {
+    val map = if (channel is User) fromServer else fromClient
+    val packetData = channel.reader.inputStream.readNBytes(header.remainingBytes)
+
+    val packetInterceptors = map["${channel.packetState}${header.packetId}"]
+    if (packetInterceptors != null) {
+      val reader = Reader(packetData.inputStream())
+      val packet = packetInterceptors[0].packetInfo.packetClass
+      val packetInstance = packet.createInstance().read(reader)
+      val packetInterceptorEvent = PacketInterceptorEvent(packetInstance)
+      packetInterceptors.forEach {
+        it.callback(packetInterceptorEvent)
+      }
+
+      if (packetInterceptorEvent.shouldRewrite && !packetInterceptorEvent.shouldCancel) {
+        packetInstance.write(channel)
+
+        return
+      }
     }
 
-    val packetInterceptors = map["${packetState}${header.packetId}"] ?: return false
+    channel.partner.writer.writeHeader(
+      packetId = header.packetId,
+      packetLength = header.packetLength
+    )
 
-    val reader = Reader(packetData.inputStream())
-    val packet = packetInterceptors[0].packetInfo.packetClass
-    val packetInstance = packet.createInstance().read(reader)
-    val packetInterceptorEvent = PacketInterceptorEvent(packetInstance)
-    packetInterceptors.forEach {
-      it.callback(packetInterceptorEvent)
-    }
-
-    if (packetInterceptorEvent.shouldRewrite && !packetInterceptorEvent.shouldCancel) {
-      packetInstance.write(writer)
-    }
-
-    return packetInterceptorEvent.shouldRewrite || packetInterceptorEvent.shouldCancel
+    channel.partner.writer.outputStream.write(packetData)
+    channel.partner.writer.outputStream.flush()
   }
 }
 

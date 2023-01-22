@@ -1,7 +1,6 @@
 package models
 
-import api.Direction
-import api.PacketInterceptorManager
+import api.users
 import keyPair
 import org.json.JSONObject
 import packets.PacketState
@@ -15,6 +14,7 @@ import util.Writer
 import util.uuidFromString
 import java.math.BigInteger
 import java.net.HttpURLConnection
+import java.net.Socket
 import java.net.URL
 import java.net.URLEncoder
 import java.security.MessageDigest
@@ -22,16 +22,27 @@ import java.util.*
 import javax.crypto.Cipher
 import kotlin.concurrent.thread
 
-class User(val writer: Writer, val reader: Reader) {
-  var serverClient: ServerClient? = null
+class User(
+  override val socket: Socket,
+  override val writer: Writer,
+  override val reader: Reader
+) : Channel {
+  var isConnected = false
 
-  var packetState = PacketState.LOGIN
+  private var serverClient: ServerClient? = null
+  override val partner: Channel
+    get() = serverClient!!
+
+  override var packetState = PacketState.HANDSHAKE
 
   var name: String? = null
   var uuid: UUID? = null
   var properties: List<Property>? = null
 
   fun init() {
+    isConnected = true
+    packetState = PacketState.LOGIN
+
     val loginStart = reader.expectPacket(LoginStart)
     name = loginStart.name
     uuid = loginStart.playerUUID
@@ -43,7 +54,7 @@ class User(val writer: Writer, val reader: Reader) {
       serverId = "",
       publicKey = keyPair!!.public,
       verifyToken = verifyToken
-    ).write(writer)
+    ).write(this)
 
     val encryptionResponse = reader.expectPacket(EncryptionResponse)
 
@@ -84,42 +95,20 @@ class User(val writer: Writer, val reader: Reader) {
       uuid = uuid!!,
       username = name!!,
       properties = properties!!
-    ).write(writer)
+    ).write(this)
 
     packetState = PacketState.PLAY
 
     serverClient = ServerClient(this)
     thread {
       serverClient!!.init()
+      socket.close()
     }
 
-    this.run()
-  }
-
-  private fun run() {
-    while (true) {
-      val header = reader.readHeader()
-//      println("[SERVER] Packet ID: 0x${header.packetId.toString(16)}")
-
-      val packetData = ByteArray(header.remainingLength)
-      for (i in 0 until header.remainingLength) {
-        packetData[i] = reader.inputStream.read().toByte()
-      }
-
-      if (!PacketInterceptorManager.handlePacket(
-          Direction.FROM_CLIENT,
-          header,
-          packetState,
-          packetData,
-          serverClient!!.writer!!
-      )) {
-        serverClient!!.writer!!.writeHeader(
-          packetId = header.packetId,
-          packetLength = header.packetLength
-        )
-
-        serverClient!!.writer!!.outputStream.write(packetData)
-      }
-    }
+    users[name!!] = this
+    this.runMirror()
+    isConnected = false
+    serverClient!!.socket.close()
+    users.remove(name!!)
   }
 }

@@ -1,8 +1,8 @@
 package packets
 
+import models.Channel
 import util.Buffer
 import util.Reader
-import util.Writer
 import kotlin.reflect.KClass
 import kotlin.reflect.full.companionObjectInstance
 
@@ -32,14 +32,18 @@ open class Packet {
     TODO("Not yet implemented")
   }
 
-  fun write(writer: Writer) {
-    val buffer = Buffer(writer)
+  fun write(channel: Channel, isSilent: Boolean = false) {
+    val buffer = Buffer(channel.writer)
 
     buffer.writeVarInt((this::class.companionObjectInstance as PacketInfo<*>).id)
     _write(buffer)
 
-    writer.writeVarInt(buffer.size)
+    channel.writer.writeVarInt(buffer.size)
     buffer.flush()
+
+    if (!isSilent) {
+
+    }
   }
 
   open fun additionalParams(): Map<String, Any?> {

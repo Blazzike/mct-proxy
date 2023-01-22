@@ -126,4 +126,10 @@ open class Writer(var outputStream: OutputStream) {
     writeVarInt(longs.size)
     longs.forEach { writeLong(it) }
   }
+
+  fun writeBitSet(bitset: BitSet) {
+    val bytes = bitset.toByteArray()
+    writeVarInt(bytes.size)
+    outputStream.write(bytes)
+  }
 }

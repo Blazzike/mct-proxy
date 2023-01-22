@@ -1,5 +1,6 @@
 package util
 
+import models.EOFException
 import packets.Packet
 import packets.PacketInfo
 import java.io.InputStream
@@ -24,6 +25,10 @@ class EncryptedInputStream(private val inputStream: InputStream, private val sha
   override fun read(): Int {
     return inputStream.read().let { if (it == -1) -1 else cipher.update(byteArrayOf(it.toByte()))[0].toInt() }
   }
+
+  override fun read(b: ByteArray, off: Int, len: Int): Int {
+    return inputStream.read(b, off, len).let { if (it == -1) -1 else cipher.update(b, off, it, b, off) }
+  }
 }
 
 class Reader(var inputStream: InputStream) {
@@ -42,7 +47,7 @@ class Reader(var inputStream: InputStream) {
     var currentByte: Int
 
     while (true) {
-      currentByte = inputStream.read()
+      currentByte = readByte()
       value = value or ((currentByte and SEGMENT_BITS).toLong() shl position)
       if (currentByte and CONTINUE_BIT == 0) break
       position += 7
@@ -58,10 +63,11 @@ class Reader(var inputStream: InputStream) {
     var currentByte: Int
 
     while (true) {
-      currentByte = inputStream.read()
+      currentByte = readByte()
       value = value or (currentByte and SEGMENT_BITS shl position)
       if (currentByte and CONTINUE_BIT == 0) break
       position += 7
+
       if (position >= 32) throw RuntimeException("VarInt is too big")
     }
 
@@ -77,13 +83,13 @@ class Reader(var inputStream: InputStream) {
   }
 
   fun readUnsignedShort(): Short {
-    val byte1 = inputStream.read()
-    val byte2 = inputStream.read()
+    val byte1 = readByte()
+    val byte2 = readByte()
     return ((byte1 shl 8) + byte2).toShort()
   }
 
   class Header(var packetLength: Int, var packetId: Int) {
-    val remainingLength: Int
+    val remainingBytes: Int
       get() = packetLength - 1
 
     override fun toString(): String {
@@ -96,7 +102,10 @@ class Reader(var inputStream: InputStream) {
   }
 
   fun readByte(): Int {
-    return inputStream.read()
+    val byte = inputStream.read()
+    if (byte == -1) throw EOFException()
+
+    return byte
   }
 
   fun <P : Packet> expectPacket(packetInfo: PacketInfo<P>, header: Header = this.readHeader()): P {
@@ -105,7 +114,7 @@ class Reader(var inputStream: InputStream) {
       throw RuntimeException("Expected packet $expectedPacketId but got ${header.packetId}")
     }
 
-    val packetData = this.inputStream.readNBytes(header.remainingLength)
+    val packetData = inputStream.readNBytes(header.remainingBytes)
 
     return packetInfo.packetClass.java.getDeclaredConstructor().newInstance().apply {
       this.read(Reader(packetData.inputStream()))
@@ -113,7 +122,7 @@ class Reader(var inputStream: InputStream) {
   }
 
   fun readBoolean(): Boolean {
-    return inputStream.read() == 1
+    return readByte() == 1
   }
 
   fun readUUID(): UUID? {
@@ -160,5 +169,13 @@ class Reader(var inputStream: InputStream) {
 
   fun readDouble(): Double {
     return Double.fromBits(readLong())
+  }
+
+  fun readBitSet(): BitSet {
+    val length = readVarInt()
+    val bytes = ByteArray(length)
+    inputStream.read(bytes)
+
+    return BitSet.valueOf(bytes)
   }
 }

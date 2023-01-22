@@ -37,28 +37,29 @@ fun main() {
   }
 }
 
-class ClientHandler(private val client: Socket) {
-  private val reader = Reader(client.getInputStream())
-  private val writer = Writer(client.getOutputStream())
+class ClientHandler(private val socket: Socket) {
+  private val reader = Reader(socket.getInputStream())
+  private val writer = Writer(socket.getOutputStream())
 
   fun handle() = try {
     val handshake = reader.expectPacket(Handshake)
+    val user = User(
+      socket = socket,
+      reader = reader,
+      writer = writer
+    )
+
     if (handshake.nextState == 1) {
       // Client is in status mode
       reader.expectPacket(StatusRequest)
 
-      StatusResponse().write(writer)
+      StatusResponse().write(user)
 
       val pingRequest = reader.expectPacket(packets.server.PingRequest)
-      packets.client.PingResponse(payload = pingRequest.payload).write(writer)
+      packets.client.PingResponse(payload = pingRequest.payload).write(user)
 
-      client.close()
+      socket.close()
     } else {
-      val user = User(
-        reader = reader,
-        writer = writer
-      )
-
       user.init()
     }
   } catch (e: Exception) {

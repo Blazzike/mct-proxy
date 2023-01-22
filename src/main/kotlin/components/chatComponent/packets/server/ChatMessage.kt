@@ -4,6 +4,7 @@ import packets.Packet
 import packets.PacketInfo
 import util.Buffer
 import util.Reader
+import java.util.*
 
 class ChatMessage(
   var message: String? = null,
@@ -11,8 +12,8 @@ class ChatMessage(
   var salt: Long? = null,
   var hasSignature: Boolean? = false,
   var signature: String? = null,
-//  var messageCount: Int? = null, // TODO
-//  var acknowledged: BitSet? = null
+  var messageCount: Int? = null, // TODO
+  var acknowledged: BitSet? = null
 ) : Packet() {
   companion object: PacketInfo<ChatMessage>(0x05)
 
@@ -22,8 +23,8 @@ class ChatMessage(
     salt = reader.readLong()
     hasSignature = reader.readBoolean()
     signature = if (hasSignature!!) reader.readString() else null
-//    val messageCount = reader.readVarInt()
-//    val acknowledged = reader.readBitSet(messageCount)
+    messageCount = reader.readVarInt()
+    acknowledged = reader.readBitSet()
 
     return this
   }
@@ -39,8 +40,8 @@ class ChatMessage(
       "salt" to salt,
       "hasSignature" to hasSignature,
       "signature" to signature,
-//      "messageCount" to messageCount,
-//      "acknowledged" to acknowledged
+      "messageCount" to messageCount,
+      "acknowledged" to acknowledged
     )
   }
 }
