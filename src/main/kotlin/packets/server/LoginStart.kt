@@ -1,5 +1,6 @@
 package packets.server
 
+import packets.BoundTo
 import packets.Packet
 import packets.PacketInfo
 import packets.PacketState
@@ -12,7 +13,7 @@ class LoginStart(
   var hasPlayerUUID: Boolean = false,
   var playerUUID: UUID? = null
 ) : Packet() {
-  companion object: PacketInfo<LoginStart>(0x00, PacketState.LOGIN)
+  companion object: PacketInfo<LoginStart>(0x00, BoundTo.SERVER, PacketState.LOGIN)
 
   override fun read(reader: Reader): LoginStart {
     name = reader.readString()

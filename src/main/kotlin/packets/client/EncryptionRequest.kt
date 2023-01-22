@@ -1,5 +1,6 @@
 package packets.client
 
+import packets.BoundTo
 import packets.Packet
 import packets.PacketInfo
 import packets.PacketState
@@ -11,7 +12,7 @@ class EncryptionRequest(
   private var publicKey: PublicKey? = null,
   private var verifyToken: ByteArray? = null
 ) : Packet() {
-  companion object: PacketInfo<EncryptionRequest>(0x01, PacketState.LOGIN)
+  companion object: PacketInfo<EncryptionRequest>(0x01, BoundTo.CLIENT, PacketState.LOGIN)
 
   override fun _write(buffer: Buffer) {
     buffer.writeString(serverId!!)

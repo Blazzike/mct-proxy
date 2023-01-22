@@ -4,11 +4,11 @@ import api.users
 import keyPair
 import org.json.JSONObject
 import packets.PacketState
-import packets.client.EncryptionRequest
-import packets.client.LoginSuccess
-import packets.client.Property
+import packets.client.*
 import packets.server.EncryptionResponse
+import packets.server.Handshake
 import packets.server.LoginStart
+import packets.server.StatusRequest
 import util.Reader
 import util.Writer
 import util.uuidFromString
@@ -108,7 +108,35 @@ class User(
     users[name!!] = this
     this.runMirror()
     isConnected = false
-    serverClient!!.socket.close()
+    if (serverClient!!.socket != null) {
+      serverClient!!.socket!!.close()
+    }
     users.remove(name!!)
+  }
+
+  fun handle() {
+    val handshake = reader.expectPacket(Handshake)
+    if (handshake.nextState == 1) {
+      this.handleStatus()
+    } else {
+      this.init()
+    }
+  }
+
+  fun handleStatus() {
+    packetState = PacketState.STATUS
+    reader.expectPacket(StatusRequest)
+
+    StatusResponse(Status(
+      version = Status.Version(
+        name = "MCTProxy",
+        protocol = -1
+      ),
+    )).write(this)
+
+    val pingRequest = reader.expectPacket(packets.server.PingRequest)
+    PingResponse(payload = pingRequest.payload).write(this)
+
+    socket.close()
   }
 }

@@ -1,5 +1,6 @@
 package packets.server
 
+import packets.BoundTo
 import packets.Packet
 import packets.PacketInfo
 import packets.PacketState
@@ -12,7 +13,7 @@ class Handshake(
   var serverPort: Short = 0,
   var nextState: Int = 0
 ) : Packet() {
-  companion object: PacketInfo<Handshake>(0x00, PacketState.HANDSHAKE)
+  companion object: PacketInfo<Handshake>(0x00, BoundTo.SERVER, PacketState.HANDSHAKE)
 
   override fun read(reader: Reader): Handshake {
     protocolVersion = reader.readVarInt()

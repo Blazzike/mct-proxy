@@ -1,5 +1,7 @@
 package packets
 
+import api.PacketInterceptorEvent
+import api.PacketInterceptorManager
 import models.Channel
 import util.Buffer
 import util.Reader
@@ -17,8 +19,15 @@ enum class PacketState {
   }
 }
 
+enum class BoundTo {
+  CLIENT,
+  SERVER,
+  NONE,
+}
+
 open class PacketInfo<P : Packet>(
   val id: Int,
+  val boundTo: BoundTo,
   val state: PacketState = PacketState.PLAY
 ) {
   val packetClass: KClass<P>
@@ -26,7 +35,10 @@ open class PacketInfo<P : Packet>(
 }
 
 open class Packet {
-  companion object: PacketInfo<Packet>(0x00)
+  companion object: PacketInfo<Packet>(0x00, BoundTo.NONE)
+
+  val packetInfo: PacketInfo<Packet>
+    get() = this::class.companionObjectInstance as PacketInfo<Packet>
 
   protected open fun _write(buffer: Buffer) {
     TODO("Not yet implemented")
@@ -38,11 +50,16 @@ open class Packet {
     buffer.writeVarInt((this::class.companionObjectInstance as PacketInfo<*>).id)
     _write(buffer)
 
-    channel.writer.writeVarInt(buffer.size)
-    buffer.flush()
-
+    var handleWrite: PacketInterceptorEvent<*>? = null
     if (!isSilent) {
+      handleWrite = PacketInterceptorManager.handleWrite(channel, this)
+    }
 
+    if (handleWrite == null || !handleWrite.shouldCancel) {
+      channel.writer.writeVarInt(buffer.size)
+      buffer.flush()
+
+      handleWrite?.runAfter()
     }
   }
 
@@ -61,21 +78,3 @@ open class Packet {
     TODO("Not yet implemented")
   }
 }
-
-//val packets: Array<Packet> = arrayOf(
-//  Handshake(),
-//)
-//
-//fun readPacket(reader: Reader): Packet? {
-//  val header = reader.readHeader();
-//
-//  packets.forEach {
-//    if (it.packetId == header.packetId) {
-//      return it.read(reader)
-//    }
-//  }
-//
-//  reader.inputStream.skipNBytes(header.packetLength.toLong())
-//
-//  return null
-//}

@@ -1,5 +1,6 @@
 package packets.client
 
+import packets.BoundTo
 import packets.Packet
 import packets.PacketInfo
 import packets.PacketState
@@ -51,7 +52,7 @@ class LoginSuccess(
   var username: String? = null,
   var properties: List<Property> = emptyList()
 ) : Packet() {
-  companion object: PacketInfo<LoginSuccess>(0x02, PacketState.LOGIN)
+  companion object: PacketInfo<LoginSuccess>(0x02, BoundTo.CLIENT, PacketState.LOGIN)
 
   override fun _write(buffer: Buffer) {
     buffer.writeUUID(uuid!!)

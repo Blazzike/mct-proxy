@@ -1,5 +1,6 @@
 package components.chatComponent.packets.server
 
+import packets.BoundTo
 import packets.Packet
 import packets.PacketInfo
 import util.Buffer
@@ -15,7 +16,7 @@ class ChatMessage(
   var messageCount: Int? = null, // TODO
   var acknowledged: BitSet? = null
 ) : Packet() {
-  companion object: PacketInfo<ChatMessage>(0x05)
+  companion object: PacketInfo<ChatMessage>(0x05, BoundTo.SERVER)
 
   override fun read(reader: Reader): Packet {
     message = reader.readString()

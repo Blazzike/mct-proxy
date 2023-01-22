@@ -1,5 +1,6 @@
 package models
 
+import PROTOCOL_VERSION
 import org.json.JSONArray
 import packets.PacketState
 import packets.client.LoginSuccess
@@ -10,7 +11,7 @@ import util.Writer
 import java.net.Socket
 
 class ServerClient(private val user: User) : Channel {
-  override lateinit var socket: Socket
+  override var socket: Socket? = null
   override lateinit var reader: Reader
   override lateinit var writer: Writer
 
@@ -31,7 +32,7 @@ class ServerClient(private val user: User) : Channel {
     )
 
     Handshake(
-      protocolVersion = 761,
+      protocolVersion = PROTOCOL_VERSION,
       serverAddress = serverAddressParts.joinToString("\u0000"),
       serverPort = 25566,
       nextState = 2

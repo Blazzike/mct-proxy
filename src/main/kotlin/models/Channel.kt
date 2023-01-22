@@ -8,7 +8,7 @@ import java.net.Socket
 import java.net.SocketException
 
 interface Channel {
-  val socket: Socket
+  val socket: Socket?
   val writer: Writer
   val reader: Reader
   val packetState: PacketState

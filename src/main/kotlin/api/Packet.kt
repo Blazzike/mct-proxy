@@ -2,6 +2,7 @@ package api
 
 import models.Channel
 import models.User
+import packets.BoundTo
 import packets.Packet
 import packets.PacketInfo
 import util.Reader
@@ -9,23 +10,35 @@ import kotlin.reflect.full.createInstance
 
 typealias PacketInterceptorCallback<P> = (packet: PacketInterceptorEvent<P>) -> Unit
 
-enum class Direction {
-  FROM_SERVER,
-  FROM_CLIENT,
-}
-
 class PacketInterceptorEvent<P : Packet>(
-  val packet: P
+  var packet: P,
+  val user: User
 ) {
   var shouldRewrite = false
   var shouldCancel = false
+
+  var afters: List<(() -> Unit)> = emptyList()
+  fun after(function: () -> Unit) {
+    afters += function
+  }
+
+  fun runAfter() {
+    afters.forEach { it() }
+  }
+
+  override fun toString(): String {
+    return "PacketInterceptorEvent(packet=$packet, user=$user, shouldRewrite=$shouldRewrite, shouldCancel=$shouldCancel, afters=$afters)"
+  }
 }
 
 class PacketInterceptor<P : Packet>(
-  val direction: Direction,
   val packetInfo: PacketInfo<P>,
   val callback: (packet: PacketInterceptorEvent<*>) -> Unit
-)
+) {
+  override fun toString(): String {
+    return "PacketInterceptor(packetInfo=$packetInfo, callback=$callback)"
+  }
+}
 
 object PacketInterceptorManager {
   private val fromServer: HashMap<String, Array<PacketInterceptor<*>>> = HashMap()
@@ -34,9 +47,10 @@ object PacketInterceptorManager {
   fun add(packetInterceptor: PacketInterceptor<*>) {
     val packetInfo = packetInterceptor.packetInfo
     val packetIdStr = "${packetInfo.state}${packetInfo.id}"
-    val map = when (packetInterceptor.direction) {
-      Direction.FROM_SERVER -> fromServer
-      Direction.FROM_CLIENT -> fromClient
+    val map = when (packetInfo.boundTo) {
+      BoundTo.CLIENT -> fromServer
+      BoundTo.SERVER -> fromClient
+      else -> throw IllegalArgumentException("PacketInterceptor must be bound to either client or server")
     }
 
     if (map[packetIdStr] == null) {
@@ -58,13 +72,19 @@ object PacketInterceptorManager {
       val reader = Reader(packetData.inputStream())
       val packet = packetInterceptors[0].packetInfo.packetClass
       val packetInstance = packet.createInstance().read(reader)
-      val packetInterceptorEvent = PacketInterceptorEvent(packetInstance)
+      val packetInterceptorEvent = PacketInterceptorEvent(
+        packetInstance,
+        if (channel is User) channel else channel.partner as User
+      )
+
       packetInterceptors.forEach {
         it.callback(packetInterceptorEvent)
       }
 
       if (packetInterceptorEvent.shouldRewrite && !packetInterceptorEvent.shouldCancel) {
-        packetInstance.write(channel)
+        packetInterceptorEvent.packet.write(channel, true)
+
+        packetInterceptorEvent.runAfter()
 
         return
       }
@@ -78,11 +98,31 @@ object PacketInterceptorManager {
     channel.partner.writer.outputStream.write(packetData)
     channel.partner.writer.outputStream.flush()
   }
+
+  fun <P : Packet> handleWrite(channel: Channel, packet: P): PacketInterceptorEvent<P>? {
+    val map = if (channel is User) fromServer else fromClient
+    val packetInterceptors = map["${channel.packetState}${packet.packetInfo.id}"]
+    if (packetInterceptors != null) {
+      val packetInterceptorEvent = PacketInterceptorEvent(packet, channel as User)
+      packetInterceptors.forEach {
+        it.callback(packetInterceptorEvent)
+      }
+
+      if (packetInterceptorEvent.shouldRewrite && !packetInterceptorEvent.shouldCancel) {
+        packetInterceptorEvent.shouldCancel = true
+        packetInterceptorEvent.packet.write(channel, true)
+        packetInterceptorEvent.runAfter()
+      }
+
+      return packetInterceptorEvent
+    }
+
+    return null
+  }
 }
 
-inline fun <reified P : Packet> addPacketInterceptor(direction: Direction, packetInfo: PacketInfo<P>, noinline callback: PacketInterceptorCallback<P>) {
+inline fun <reified P : Packet> addPacketInterceptor(packetInfo: PacketInfo<P>, noinline callback: PacketInterceptorCallback<P>) {
   PacketInterceptorManager.add(PacketInterceptor(
-    direction = direction,
     packetInfo = packetInfo,
     callback = callback as (packet: PacketInterceptorEvent<*>) -> Unit
   ))
