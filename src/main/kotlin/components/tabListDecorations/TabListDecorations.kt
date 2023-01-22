@@ -23,7 +23,6 @@ class TabListDecorations : Component() {
             " "
           ).toJson(),
           footer = MCText(
-            MCText.NewLine,
             MCText.NewLine
           ).toJson()
         ).write(e.user)
