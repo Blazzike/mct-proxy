@@ -50,8 +50,9 @@ open class Writer(var outputStream: OutputStream) {
   }
 
   fun writeString(value: String) {
-    this.writeVarInt(value.length)
-    outputStream.write(value.toByteArray())
+    val byteArray = value.toByteArray()
+    this.writeVarInt(byteArray.size)
+    outputStream.write(byteArray)
   }
 
   fun writeVarLong(value: Long) {

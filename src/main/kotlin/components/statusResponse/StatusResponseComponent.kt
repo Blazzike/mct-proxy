@@ -1,9 +1,11 @@
 package components.tabListDecorations
 
+import Constants.SERVER_ICON
 import PROTOCOL_VERSION
 import VERSION
 import api.Component
 import api.addPacketInterceptor
+import api.users
 import models.MCText
 import packets.client.Status
 import packets.client.StatusResponse
@@ -19,31 +21,22 @@ class StatusResponseComponent : Component() {
           ),
           players = Status.Players(
             max = 20,
-            online = 0,
-            sample = emptyList()
+            online = users.values.size,
+            sample = users.values.map { Status.Player(it.name!!, it.uuid!!.toString() ) }
           ),
-          description = MCText().color(MCText.Color.GREEN,
-            "Welcome to ",
-            MCText().bold("MCTraveler"),
-            MCText().newLine,
-            MCText().text("Click here to get started.").clickEvent(
-              action = MCText.ClickAction.OPEN_URL,
-              value = "https://www.google.com",
-            ).color(MCText.Color.RED)
-          ).toJson(),
           description = MCText(
             MCText.Color.GREEN,
             "Welcome to ",
             MCText.bold,
             "MCTraveler",
             MCText.newLine,
-            MCText.clickEvent(
-              action = MCText.ClickAction.OPEN_URL,
-              value = "https://www.google.com",
-            ),
-            MCText.Color.RED,
-            "Click here to get started."
-          ).toJson()
+            MCText.undecorated,
+            MCText.Color.GRAY,
+            "Now in rewrite ",
+            MCText.Color.DARK_AQUA,
+            "Beta",
+          ).toCodedString(),
+          favicon = SERVER_ICON
         )
       )
 

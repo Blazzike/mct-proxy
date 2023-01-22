@@ -65,9 +65,7 @@ class Status(
     return JSONObject().apply {
       put("version", version.toJson())
       put("players", players.toJson())
-      put("description", JSONObject().apply {
-        put("text", description)
-      })
+      put("description", description)
       put("favicon", favicon)
       put("previewsChat", previewsChat)
       put("enforcesSecureChat", enforcesSecureChat)
