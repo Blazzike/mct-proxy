@@ -19,6 +19,6 @@ class EncryptionRequest(
     buffer.writeVarInt(publicKey!!.encoded.size)
     buffer.writeBytes(publicKey!!.encoded)
     buffer.writeVarInt(verifyToken!!.size)
-    buffer.writeBytes(verifyToken)
+    buffer.writeBytes(verifyToken!!)
   }
 }

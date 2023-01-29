@@ -5,7 +5,19 @@ import org.json.JSONObject
 
 interface MCTextComponent
 
-class MCText(private vararg val parts: Any) {
+class MCText(vararg parts: Any) {
+  private val parts: MutableList<Any> = mutableListOf()
+
+  init {
+    parts.forEach {
+      if (it is MCText) {
+        this.parts.addAll(it.parts)
+      } else {
+        this.parts.add(it)
+      }
+    }
+  }
+
   enum class Color(
     val value: String,
     val code: String,
@@ -79,7 +91,7 @@ class MCText(private vararg val parts: Any) {
     }
   }
 
-  fun toJson(): String {
+  fun toJson(): JSONArray {
     var isBold = false
     var isItalic = false
     var isUnderlined = false
@@ -88,7 +100,10 @@ class MCText(private vararg val parts: Any) {
     var color: Color? = null
     var clickEvent: ClickActionComponent? = null
 
-    val jsonArray = JSONArray()
+    val jsonArray = JSONArray().apply {
+      put("")
+    }
+
     this.parts.forEach {
       when (it) {
         is String -> {
@@ -144,7 +159,11 @@ class MCText(private vararg val parts: Any) {
       }
     }
 
-    return jsonArray.toString()
+    return jsonArray
+  }
+
+  fun toJsonStr(): String {
+    return this.toJson().toString()
   }
 
   fun toCodedString(): String {

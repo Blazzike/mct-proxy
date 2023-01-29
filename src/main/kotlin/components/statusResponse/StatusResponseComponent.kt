@@ -10,7 +10,7 @@ import models.MCText
 import packets.client.Status
 import packets.client.StatusResponse
 
-class StatusResponseComponent : Component() {
+object StatusResponseComponent : Component() {
   override fun enable() {
     addPacketInterceptor(StatusResponse) { e ->
       e.packet = StatusResponse(
@@ -36,7 +36,7 @@ class StatusResponseComponent : Component() {
             MCText.Color.DARK_AQUA,
             "Beta",
           ).toCodedString(),
-          favicon = SERVER_ICON
+          favicon = "data:image/png;base64,$SERVER_ICON"
         )
       )
 

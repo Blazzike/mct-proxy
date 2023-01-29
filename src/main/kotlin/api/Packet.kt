@@ -1,7 +1,8 @@
 package api
 
 import models.Channel
-import models.User
+import models.UserChannel
+import models.VanillaChannel
 import packets.BoundTo
 import packets.Packet
 import packets.PacketInfo
@@ -12,7 +13,7 @@ typealias PacketInterceptorCallback<P> = (packet: PacketInterceptorEvent<P>) -> 
 
 class PacketInterceptorEvent<P : Packet>(
   var packet: P,
-  val user: User
+  val userChannel: UserChannel
 ) {
   var shouldRewrite = false
   var shouldCancel = false
@@ -27,7 +28,7 @@ class PacketInterceptorEvent<P : Packet>(
   }
 
   override fun toString(): String {
-    return "PacketInterceptorEvent(packet=$packet, user=$user, shouldRewrite=$shouldRewrite, shouldCancel=$shouldCancel, afters=$afters)"
+    return "PacketInterceptorEvent(packet=$packet, user=$userChannel, shouldRewrite=$shouldRewrite, shouldCancel=$shouldCancel, afters=$afters)"
   }
 }
 
@@ -64,9 +65,8 @@ object PacketInterceptorManager {
     channel: Channel,
     header: Reader.Header
   ) {
-    val map = if (channel is User) fromServer else fromClient
+    val map = if (channel is VanillaChannel) fromServer else fromClient
     val packetData = channel.reader.inputStream.readNBytes(header.remainingBytes)
-
     val packetInterceptors = map["${channel.packetState}${header.packetId}"]
     if (packetInterceptors != null) {
       val reader = Reader(packetData.inputStream())
@@ -74,15 +74,19 @@ object PacketInterceptorManager {
       val packetInstance = packet.createInstance().read(reader)
       val packetInterceptorEvent = PacketInterceptorEvent(
         packetInstance,
-        if (channel is User) channel else channel.partner as User
+        if (channel is UserChannel) channel else channel.partner as UserChannel
       )
 
       packetInterceptors.forEach {
         it.callback(packetInterceptorEvent)
       }
 
-      if (packetInterceptorEvent.shouldRewrite && !packetInterceptorEvent.shouldCancel) {
-        packetInterceptorEvent.packet.write(channel, true)
+      if (packetInterceptorEvent.shouldCancel) {
+        return
+      }
+
+      if (packetInterceptorEvent.shouldRewrite) {
+        packetInterceptorEvent.packet.write(channel.partner, true)
 
         packetInterceptorEvent.runAfter()
 
@@ -100,15 +104,19 @@ object PacketInterceptorManager {
   }
 
   fun <P : Packet> handleWrite(channel: Channel, packet: P): PacketInterceptorEvent<P>? {
-    val map = if (channel is User) fromServer else fromClient
+    val map = if (channel is UserChannel) fromServer else fromClient
     val packetInterceptors = map["${channel.packetState}${packet.packetInfo.id}"]
     if (packetInterceptors != null) {
-      val packetInterceptorEvent = PacketInterceptorEvent(packet, channel as User)
+      val packetInterceptorEvent = PacketInterceptorEvent(packet, channel as UserChannel)
       packetInterceptors.forEach {
         it.callback(packetInterceptorEvent)
       }
 
-      if (packetInterceptorEvent.shouldRewrite && !packetInterceptorEvent.shouldCancel) {
+      if (packetInterceptorEvent.shouldCancel) {
+        return packetInterceptorEvent
+      }
+
+      if (packetInterceptorEvent.shouldRewrite) {
         packetInterceptorEvent.shouldCancel = true
         packetInterceptorEvent.packet.write(channel, true)
         packetInterceptorEvent.runAfter()

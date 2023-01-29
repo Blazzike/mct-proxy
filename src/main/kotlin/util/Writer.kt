@@ -73,7 +73,7 @@ open class Writer(var outputStream: OutputStream) {
     this.writeVarInt(packetId)
   }
 
-  fun writeBytes(bytes: ByteArray?) {
+  fun writeBytes(bytes: ByteArray) {
     outputStream.write(bytes)
   }
 
@@ -132,5 +132,13 @@ open class Writer(var outputStream: OutputStream) {
     val bytes = bitset.toByteArray()
     writeVarInt(bytes.size)
     outputStream.write(bytes)
+  }
+
+  fun writeFloat(float: Float) {
+    writeInt(float.toRawBits())
+  }
+
+  fun writeDouble(double: Double) {
+    writeLong(double.toRawBits())
   }
 }

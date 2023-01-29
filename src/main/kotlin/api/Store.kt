@@ -1,5 +1,5 @@
 package api
 
-import models.User
+import models.UserChannel
 
-val users = mutableMapOf<String, User>()
+val users = mutableMapOf<String, UserChannel>()

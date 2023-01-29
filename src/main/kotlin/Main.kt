@@ -1,5 +1,5 @@
 
-import models.User
+import models.UserChannel
 import util.Reader
 import util.Writer
 import java.net.ServerSocket
@@ -29,7 +29,7 @@ fun main() {
 
     thread {
       try {
-        User(
+        UserChannel(
           socket = socket,
           reader = Reader(socket.getInputStream()),
           writer = Writer(socket.getOutputStream())

@@ -18,7 +18,7 @@ class Handshake(
   override fun read(reader: Reader): Handshake {
     protocolVersion = reader.readVarInt()
     serverAddress = reader.readString()
-    serverPort = reader.readUnsignedShort()
+    serverPort = reader.readShort()
     nextState = reader.readVarInt()
 
     return this

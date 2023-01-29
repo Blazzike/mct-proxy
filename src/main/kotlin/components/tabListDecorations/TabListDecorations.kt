@@ -6,7 +6,7 @@ import components.tabListDecorations.packets.client.SetTabListHeaderAndFooter
 import models.MCText
 import packets.client.LoginSuccess
 
-class TabListDecorations : Component() {
+object TabListDecorations : Component() {
   override fun enable() {
     addPacketInterceptor(LoginSuccess) { e ->
       e.after {
@@ -21,11 +21,11 @@ class TabListDecorations : Component() {
             "In Beta",
             MCText.NewLine,
             " "
-          ).toJson(),
+          ).toJsonStr(),
           footer = MCText(
             MCText.NewLine
-          ).toJson()
-        ).write(e.user)
+          ).toJsonStr()
+        ).write(e.userChannel)
       }
     }
   }

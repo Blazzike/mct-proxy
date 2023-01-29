@@ -1,6 +1,7 @@
 package util
 
 import models.EOFException
+import models.Position
 import packets.Packet
 import packets.PacketInfo
 import java.io.InputStream
@@ -82,7 +83,7 @@ class Reader(var inputStream: InputStream) {
     return String(bytes)
   }
 
-  fun readUnsignedShort(): Short {
+  fun readShort(): Short {
     val byte1 = readByte()
     val byte2 = readByte()
     return ((byte1 shl 8) + byte2).toShort()
@@ -171,11 +172,92 @@ class Reader(var inputStream: InputStream) {
     return Double.fromBits(readLong())
   }
 
-  fun readBitSet(): BitSet {
-    val length = readVarInt()
+  fun readBitSet(length: Int = readVarInt()): BitSet {
     val bytes = ByteArray(length)
     inputStream.read(bytes)
 
     return BitSet.valueOf(bytes)
+  }
+
+  fun readVarIntArray(length: Int = readVarInt()): List<Int> {
+    val list = mutableListOf<Int>()
+    for (i in 0 until length) {
+      list.add(readVarInt())
+    }
+
+    return list
+  }
+
+  fun readFloat(): Float {
+    return Float.fromBits(readInt())
+  }
+
+  fun readInt(): Int {
+    val bytes = ByteArray(4)
+    inputStream.read(bytes)
+
+    return bytes.iterator().asSequence().map { it.toInt() and 0xFF }.reduce { acc, byte ->
+      (acc shl 8) or byte
+    }
+  }
+
+  fun readPosition(): Position {
+    val value = readLong()
+
+    return Position(
+      x = value shr 38,
+      y = value shl 52 shr 52,
+      z = value shl 26 shr 38
+    )
+  }
+
+  fun skipNBT() {
+    when (val type = readByte()) {
+      0 -> Unit
+      1 -> readByte()
+      2 -> readShort()
+      3 -> readInt()
+      4 -> readLong()
+      5 -> readFloat()
+      6 -> readDouble()
+      7 -> {
+        val length = readVarInt()
+        for (i in 0 until length) {
+          readByte()
+        }
+      }
+      8 -> readString()
+      9 -> {
+        readByte()
+        val length = readVarInt()
+        for (i in 0 until length) {
+          skipNBT()
+        }
+      }
+      10 -> {
+        while (true) {
+          val name = readString()
+          if (name.isEmpty()) break
+          skipNBT()
+        }
+      }
+      11 -> {
+        val length = readVarInt()
+        for (i in 0 until length) {
+          readInt()
+          readInt()
+          readInt()
+        }
+      }
+      12 -> {
+        val length = readVarInt()
+        for (i in 0 until length) {
+          readLong()
+          readLong()
+          readLong()
+        }
+      }
+      else -> throw RuntimeException("Unknown NBT type $type")
+    }
   }
 }

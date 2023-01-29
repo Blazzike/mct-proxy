@@ -22,16 +22,16 @@ import java.util.*
 import javax.crypto.Cipher
 import kotlin.concurrent.thread
 
-class User(
+class UserChannel(
   override val socket: Socket,
   override val writer: Writer,
   override val reader: Reader
 ) : Channel {
   var isConnected = false
 
-  private var serverClient: ServerClient? = null
+  private var vanillaChannel: VanillaChannel? = null
   override val partner: Channel
-    get() = serverClient!!
+    get() = vanillaChannel!!
 
   override var packetState = PacketState.HANDSHAKE
 
@@ -99,17 +99,17 @@ class User(
 
     packetState = PacketState.PLAY
 
-    serverClient = ServerClient(this)
+    vanillaChannel = VanillaChannel(this)
     thread {
-      serverClient!!.init()
+      vanillaChannel!!.init()
       socket.close()
     }
 
     users[name!!] = this
     this.runMirror()
     isConnected = false
-    if (serverClient!!.socket != null) {
-      serverClient!!.socket!!.close()
+    if (vanillaChannel!!.socket != null) {
+      vanillaChannel!!.socket!!.close()
     }
     users.remove(name!!)
   }

@@ -10,14 +10,14 @@ import util.Reader
 import util.Writer
 import java.net.Socket
 
-class ServerClient(private val user: User) : Channel {
+class VanillaChannel(private val userChannel: UserChannel) : Channel {
   override var socket: Socket? = null
   override lateinit var reader: Reader
   override lateinit var writer: Writer
 
   override var packetState = PacketState.LOGIN
   override val partner: Channel
-    get() = user
+    get() = userChannel
 
   fun init() {
     socket = Socket("localhost", 25566)
@@ -27,8 +27,8 @@ class ServerClient(private val user: User) : Channel {
     val serverAddressParts = arrayOf(
       "localhost",
       "127.0.0.1",
-      user.uuid.toString().replace("-", ""), // TODO
-      JSONArray(user.properties!!).toString()
+      userChannel.uuid.toString().replace("-", ""), // TODO
+      JSONArray(userChannel.properties!!).toString()
     )
 
     Handshake(
@@ -39,9 +39,9 @@ class ServerClient(private val user: User) : Channel {
     ).write(this)
 
     LoginStart(
-      name = user.name,
+      name = userChannel.name,
       hasPlayerUUID = true,
-      playerUUID = user.uuid
+      playerUUID = userChannel.uuid
     ).write(this)
 
     reader.expectPacket(LoginSuccess)
