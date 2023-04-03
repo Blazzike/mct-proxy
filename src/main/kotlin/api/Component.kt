@@ -8,4 +8,8 @@ open class Component {
   open fun disable() {
     //
   }
+
+  fun log(message: String) {
+    println("[${this::class.simpleName}] $message")
+  }
 }

@@ -1,7 +1,7 @@
 package models
 
-import org.json.JSONArray
-import org.json.JSONObject
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 
 interface MCTextComponent
 
@@ -19,7 +19,7 @@ class MCText(vararg parts: Any) {
   }
 
   enum class Color(
-    val value: String,
+    val value: String?,
     val code: String,
   ) : MCTextComponent {
     BLACK("black", "0"),
@@ -37,7 +37,8 @@ class MCText(vararg parts: Any) {
     RED("red", "c"),
     LIGHT_PURPLE("light_purple", "d"),
     YELLOW("yellow", "e"),
-    WHITE("white", "f");
+    WHITE("white", "f"),
+    RESET(null, "r");
   }
 
   enum class ClickAction(val value: String) {
@@ -91,7 +92,7 @@ class MCText(vararg parts: Any) {
     }
   }
 
-  fun toJson(): JSONArray {
+  fun toJson(): JsonArray {
     var isBold = false
     var isItalic = false
     var isUnderlined = false
@@ -100,28 +101,30 @@ class MCText(vararg parts: Any) {
     var color: Color? = null
     var clickEvent: ClickActionComponent? = null
 
-    val jsonArray = JSONArray().apply {
-      put("")
+    val jsonArray = JsonArray().apply {
+      add(JsonObject().apply {
+        addProperty("text", "")
+      })
     }
 
     this.parts.forEach {
       when (it) {
         is String -> {
-          jsonArray.put(JSONObject().apply {
-            put("text", it)
+          jsonArray.add(JsonObject().apply {
+            addProperty("text", it)
 
-            if (isBold) put("bold", true)
-            if (isItalic) put("italic", true)
-            if (isUnderlined) put("underlined", true)
-            if (isStrikethrough) put("strikethrough", true)
-            if (isObfuscated) put("obfuscated", true)
+            if (isBold) addProperty("bold", true)
+            if (isItalic) addProperty("italic", true)
+            if (isUnderlined) addProperty("underlined", true)
+            if (isStrikethrough) addProperty("strikethrough", true)
+            if (isObfuscated) addProperty("obfuscated", true)
 
-            if (color != null) put("color", color!!.value)
+            if (color != null) addProperty("color", color!!.value)
 
             if (clickEvent != null) {
-              put("clickEvent", JSONObject().apply {
-                put("action", clickEvent!!.action.value)
-                put("value", clickEvent!!.value)
+              add("clickEvent", JsonObject().apply {
+                addProperty("action", clickEvent!!.action.value)
+                addProperty("value", clickEvent!!.value)
               })
             }
           })
@@ -152,8 +155,8 @@ class MCText(vararg parts: Any) {
         }
 
         is NewLine -> {
-          jsonArray.put(JSONObject().apply {
-            put("text", "\n")
+          jsonArray.add(JsonObject().apply {
+            addProperty("text", "\n")
           })
         }
       }

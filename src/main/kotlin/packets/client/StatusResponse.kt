@@ -1,6 +1,7 @@
 package packets.client
 
-import org.json.JSONObject
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import packets.BoundTo
 import packets.Packet
 import packets.PacketInfo
@@ -8,7 +9,7 @@ import packets.PacketState
 import util.Buffer
 
 interface StatusPart {
-  fun toJson(): JSONObject
+  fun toJson(): JsonObject
 }
 
 class Status(
@@ -27,10 +28,10 @@ class Status(
     val name: String,
     val protocol: Int
   ) : StatusPart {
-    override fun toJson(): JSONObject {
-      return JSONObject().apply {
-        put("name", name)
-        put("protocol", protocol)
+    override fun toJson(): JsonObject {
+      return JsonObject().apply {
+        addProperty("name", name)
+        addProperty("protocol", protocol)
       }
     }
   }
@@ -39,10 +40,10 @@ class Status(
     val name: String,
     val id: String
   ) : StatusPart {
-    override fun toJson(): JSONObject {
-      return JSONObject().apply {
-        put("name", name)
-        put("id", id)
+    override fun toJson(): JsonObject {
+      return JsonObject().apply {
+        addProperty("name", name)
+        addProperty("id", id)
       }
     }
   }
@@ -52,23 +53,27 @@ class Status(
     val online: Int,
     val sample: List<Player>
   ) : StatusPart {
-    override fun toJson(): JSONObject {
-      return JSONObject().apply {
-        put("max", max)
-        put("online", online)
-        put("sample", sample.map { it.toJson() })
+    override fun toJson(): JsonObject {
+      return JsonObject().apply {
+        addProperty("max", max)
+        addProperty("online", online)
+        add("sample", JsonArray().apply {
+          sample.forEach {
+            add(it.toJson())
+          }
+        })
       }
     }
   }
 
-  override fun toJson(): JSONObject {
-    return JSONObject().apply {
-      put("version", version.toJson())
-      put("players", players.toJson())
-      put("description", description)
-      put("favicon", favicon)
-      put("previewsChat", previewsChat)
-      put("enforcesSecureChat", enforcesSecureChat)
+  override fun toJson(): JsonObject {
+    return JsonObject().apply {
+      add("version", version.toJson())
+      add("players", players.toJson())
+      addProperty("description", description)
+      addProperty("favicon", favicon)
+      addProperty("previewsChat", previewsChat)
+      addProperty("enforcesSecureChat", enforcesSecureChat)
     }
   }
 }

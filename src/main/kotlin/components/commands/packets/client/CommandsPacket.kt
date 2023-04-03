@@ -33,8 +33,7 @@ open class Node(
     fun read(buffer: Reader): Node {
       val flag = buffer.readByte()
 
-      val childrenSize = buffer.readVarInt()
-      val children = (0 until childrenSize).map { buffer.readVarInt() }.toMutableList()
+      val children = buffer.readArray { buffer.readVarInt() }.toMutableList()
 
       val result: Node
       if (flag and 0x02 != 0) {
@@ -476,10 +475,7 @@ class CommandsPacket(
   }
 
   override fun read(reader: Reader): Packet {
-    var count = reader.readVarInt()
-    nodes = (0 until count).map {
-      Node.read(reader)
-    }.toMutableList()
+    nodes = reader.readArray { Node.read(reader) }.toMutableList()
 
     rootIndex = reader.readVarInt()
 

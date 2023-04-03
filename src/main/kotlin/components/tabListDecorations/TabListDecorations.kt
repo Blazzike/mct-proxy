@@ -1,6 +1,7 @@
 package components.tabListDecorations
 
 import api.Component
+import api.PacketFormation
 import api.addPacketInterceptor
 import components.tabListDecorations.packets.client.SetTabListHeaderAndFooter
 import models.MCText
@@ -8,7 +9,7 @@ import packets.client.LoginSuccess
 
 object TabListDecorations : Component() {
   override fun enable() {
-    addPacketInterceptor(LoginSuccess) { e ->
+    addPacketInterceptor(LoginSuccess, PacketFormation.PROXY) { e ->
       e.after {
         SetTabListHeaderAndFooter(
           header = MCText(

@@ -1,9 +1,10 @@
-package components.tabListDecorations
+package components.statusResponse
 
 import Constants.SERVER_ICON
 import PROTOCOL_VERSION
 import VERSION
 import api.Component
+import api.PacketFormation
 import api.addPacketInterceptor
 import api.users
 import models.MCText
@@ -12,7 +13,7 @@ import packets.client.StatusResponse
 
 object StatusResponseComponent : Component() {
   override fun enable() {
-    addPacketInterceptor(StatusResponse) { e ->
+    addPacketInterceptor(StatusResponse, PacketFormation.PROXY) { e ->
       e.packet = StatusResponse(
         status = Status(
           version = Status.Version(

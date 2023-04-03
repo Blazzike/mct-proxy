@@ -3,6 +3,7 @@ package components.noRain
 import api.Component
 import components.commands.Commands
 import components.commands.Commands.CommandResponse
+import components.commands.ResponseType
 import components.noRain.packets.client.GameEvent
 
 object NoRain : Component() {
@@ -13,7 +14,7 @@ object NoRain : Component() {
         value = 0f
       ).write(e.userChannel)
 
-      return@register CommandResponse(CommandResponse.Type.SUCCESS, "Rain has been hidden")
+      return@register CommandResponse(ResponseType.SUCCESS, "Rain has been hidden")
     }
   }
 }

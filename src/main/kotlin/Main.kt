@@ -25,18 +25,13 @@ fun main() {
 
   while (true) {
     val socket = server.accept()
-    println("Client connected: ${socket.inetAddress.hostAddress}")
 
     thread {
-      try {
-        UserChannel(
-          socket = socket,
-          reader = Reader(socket.getInputStream()),
-          writer = Writer(socket.getOutputStream())
-        ).handle()
-      } catch (e: Exception) {
-        Exception("Client disconnected unexpectedly", e).printStackTrace()
-      }
+      UserChannel(
+        socket = socket,
+        reader = Reader(socket.getInputStream()),
+        writer = Writer(socket.getOutputStream())
+      ).handle()
     }
   }
 }

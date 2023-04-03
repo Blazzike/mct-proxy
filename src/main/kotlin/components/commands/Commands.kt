@@ -13,6 +13,12 @@ typealias CommandAction = (e: Commands.ExecuteEvent) -> Commands.CommandResponse
 
 class Command(val label: String, val action: CommandAction)
 
+enum class ResponseType(val color: MCText.Color) {
+  SUCCESS(MCText.Color.GREEN),
+  ERROR(MCText.Color.RED),
+  NOTICE(MCText.Color.YELLOW),
+}
+
 object Commands : Component() {
   val commands: MutableList<Command> = mutableListOf()
 
@@ -50,22 +56,16 @@ object Commands : Component() {
     }
   }
 
-  class CommandResponse(val type: Type, val message: MCText) {
-    constructor(type: Type, message: String) : this(type, MCText(message))
-
-    enum class Type(val color: MCText.Color) {
-      SUCCESS(MCText.Color.GREEN),
-      ERROR(MCText.Color.RED),
-      NOTICE(MCText.Color.YELLOW),
-    }
+  class CommandResponse(val responseType: ResponseType, val message: MCText) {
+    constructor(responseType: ResponseType, message: String) : this(responseType, MCText(message))
 
     fun send(userChannel: UserChannel) {
       val json = MCText(
-        type.color,
+        responseType.color,
         MCText.bold,
-        type.name,
+        responseType.name,
         MCText.undecorated,
-        MCText.Color.WHITE,
+        MCText.Color.RESET,
         " ",
         message
       ).toJsonStr()

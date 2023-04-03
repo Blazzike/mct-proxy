@@ -1,15 +1,14 @@
 package util
 
-import models.EOFException
 import models.Position
 import packets.Packet
 import packets.PacketInfo
+import java.io.EOFException
 import java.io.InputStream
 import java.util.*
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
-import kotlin.reflect.KClass
 
 private const val SEGMENT_BITS = 0x7F
 private const val CONTINUE_BIT = 0x80
@@ -126,7 +125,7 @@ class Reader(var inputStream: InputStream) {
     return readByte() == 1
   }
 
-  fun readUUID(): UUID? {
+  fun readUUID(): UUID {
     val mostSignificantBits = readLong()
     val leastSignificantBits = readLong()
     return UUID(mostSignificantBits, leastSignificantBits)
@@ -143,49 +142,8 @@ class Reader(var inputStream: InputStream) {
     inputStream = EncryptedInputStream(inputStream, sharedSecret)
   }
 
-  fun readLongArray(length: Int = readVarInt()): LongArray {
-    val array = LongArray(length)
-    for (i in 0 until length) {
-      array[i] = this.readLong()
-    }
-
-    return array
-  }
-
-  fun <T : Enum<T>> readEnums(enumClass: KClass<T>): EnumSet<T> {
-    val length = enumClass.java.enumConstants.size
-    val bytes = ByteArray(length / 8 + 1)
-    inputStream.read(bytes)
-
-    val bitSet = BitSet.valueOf(bytes)
-    val enumSet = EnumSet.noneOf(enumClass.java)
-    for (i in 0 until length) {
-      if (bitSet.get(i)) {
-        enumSet.add(enumClass.java.enumConstants[i])
-      }
-    }
-
-    return enumSet
-  }
-
   fun readDouble(): Double {
     return Double.fromBits(readLong())
-  }
-
-  fun readBitSet(length: Int = readVarInt()): BitSet {
-    val bytes = ByteArray(length)
-    inputStream.read(bytes)
-
-    return BitSet.valueOf(bytes)
-  }
-
-  fun readVarIntArray(length: Int = readVarInt()): List<Int> {
-    val list = mutableListOf<Int>()
-    for (i in 0 until length) {
-      list.add(readVarInt())
-    }
-
-    return list
   }
 
   fun readFloat(): Float {
@@ -211,53 +169,51 @@ class Reader(var inputStream: InputStream) {
     )
   }
 
-  fun skipNBT() {
-    when (val type = readByte()) {
-      0 -> Unit
-      1 -> readByte()
-      2 -> readShort()
-      3 -> readInt()
-      4 -> readLong()
-      5 -> readFloat()
-      6 -> readDouble()
+  fun skipNBT(type: Int = readByte()) {
+    when (type) {
+      0 -> return
+      1 -> inputStream.skipNBytes(1)
+      2 -> inputStream.skipNBytes(2)
+      3 -> inputStream.skipNBytes(4)
+      4 -> inputStream.skipNBytes(8)
+      5 -> inputStream.skipNBytes(4)
+      6 -> inputStream.skipNBytes(8)
       7 -> {
-        val length = readVarInt()
-        for (i in 0 until length) {
-          readByte()
-        }
+        val length = readInt().toLong()
+        inputStream.skipNBytes(length)
       }
-      8 -> readString()
+      8 -> {
+        val length = readShort().toLong()
+        inputStream.skipNBytes(length)
+      }
       9 -> {
-        readByte()
-        val length = readVarInt()
+        val type = readByte()
+        val length = readInt().toLong()
         for (i in 0 until length) {
-          skipNBT()
+          skipNBT(type)
         }
       }
       10 -> {
         while (true) {
-          val name = readString()
-          if (name.isEmpty()) break
-          skipNBT()
+          val type = readByte()
+          if (type == 0) return
+          skipNBT(8) // string
+          skipNBT(type)
         }
       }
       11 -> {
-        val length = readVarInt()
-        for (i in 0 until length) {
-          readInt()
-          readInt()
-          readInt()
-        }
+        val length = readInt()
+        inputStream.skipNBytes((length * 4).toLong())
       }
       12 -> {
-        val length = readVarInt()
-        for (i in 0 until length) {
-          readLong()
-          readLong()
-          readLong()
-        }
+        val length = readInt()
+        inputStream.skipNBytes((length * 8).toLong())
       }
       else -> throw RuntimeException("Unknown NBT type $type")
     }
+  }
+
+  inline fun <reified T> readArray(length: Int = readVarInt(), transform: () -> T): List<T> {
+    return List(length) { transform() }
   }
 }

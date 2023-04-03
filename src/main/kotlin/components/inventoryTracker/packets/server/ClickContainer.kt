@@ -37,7 +37,6 @@ class ClickContainer(
     slots = Array(slotsCount) {
       reader.readShort() to Slot().read(reader)
     }.toMap()
-    println(slots)
 
     carriedItem = Slot().read(reader)
 

@@ -7,13 +7,13 @@ import packets.PacketInfo
 import util.Reader
 
 class PlayerAction(
-  var status: Status? = null,
+  var action: Action? = null,
   var blockPosition: Position? = null,
   var face: Face? = null,
   var sequence: Int? = null,
   // TODO: more fields from https://wiki.vg/Protocol#Use_Item_On
 ) : Packet() {
-  enum class Status(val isDig: Boolean = false) {
+  enum class Action(val isDig: Boolean = false) {
     STARTED_DIGGING(true),
     CANCELLED_DIGGING(true),
     FINISHED_DIGGING(true),
@@ -35,7 +35,7 @@ class PlayerAction(
   companion object: PacketInfo<PlayerAction>(0x1C, BoundTo.SERVER)
 
   override fun read(reader: Reader): PlayerAction {
-    status = Status.values()[reader.readVarInt()]
+    action = Action.values()[reader.readVarInt()]
     blockPosition = reader.readPosition()
     face = Face.values()[reader.readByte()]
     sequence = reader.readVarInt()
@@ -45,7 +45,7 @@ class PlayerAction(
 
   override fun additionalParams(): Map<String, Any?> {
     return mapOf(
-      "status" to status,
+      "status" to action,
       "blockPosition" to blockPosition,
       "face" to face,
       "sequence" to sequence,

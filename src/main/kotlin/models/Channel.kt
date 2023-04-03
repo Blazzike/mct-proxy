@@ -1,11 +1,16 @@
 package models
 
+import api.Event
+import api.EventEmitter
 import api.PacketInterceptorManager
 import packets.PacketState
 import util.Reader
 import util.Writer
+import java.io.EOFException
 import java.net.Socket
 import java.net.SocketException
+
+class DisconnectEvent : Event
 
 interface Channel {
   val socket: Socket?
@@ -13,44 +18,23 @@ interface Channel {
   val reader: Reader
   val packetState: PacketState
   val partner: Channel
+
+  val onDisconnect: EventEmitter<DisconnectEvent>
 }
 
 fun Channel.runMirror() {
   while (true) {
     try {
       val header = reader.readHeader()
-//      if (this is VanillaChannel) {
-//        when (header.packetId) {
-//          0x27 -> null
-//          0x50 -> null
-//          0x28 -> null
-//          0x3e -> null
-//          0x20 -> null
-//          0x5a -> null
-//          0x5e -> null
-//          0x09 -> null
-//          0x64 -> null
-//          0x23 -> null
-//          0x19 -> null
-//          0x66 -> null
-//          0x4e -> null
-//          0x3a -> null
-//          0x3f -> null
-//          0x1f -> null
-//          0x29-> null
-//          0x00-> null
-//          0x36-> null
-//          else -> println("Server: $header")
-//        }
-//      }
-
       PacketInterceptorManager.handlePacket(this, header)
     } catch (e: SocketException) {
-      println("Socket closed")
+      // Client disconnected TODO debug
       break
     } catch (e: EOFException) {
-      println("EOF")
-      e.printStackTrace()
+      println("${socket?.inetAddress?.hostAddress ?: "unknown"} disconnected")
+      this.onDisconnect.emit(DisconnectEvent())
+
+      // Client disconnected TODO debug
       break
     }
   }

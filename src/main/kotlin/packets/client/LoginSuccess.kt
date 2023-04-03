@@ -64,10 +64,7 @@ class LoginSuccess(
   override fun read(reader: Reader): Packet {
     uuid = reader.readUUID()
     username = reader.readString()
-    val propertyCount = reader.readVarInt()
-    properties = (0 until propertyCount).map {
-      Property.read(reader)
-    }
+    properties = reader.readArray { Property.read(reader) }
 
     return this
   }

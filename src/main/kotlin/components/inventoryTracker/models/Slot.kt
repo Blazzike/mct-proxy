@@ -1,5 +1,6 @@
 package components.inventoryTracker.models
 
+import util.Buffer
 import util.Reader
 
 class Slot(
@@ -17,5 +18,12 @@ class Slot(
 
   override fun toString(): String {
     return "Slot(isPresent=$isPresent, itemStack=$itemStack)"
+  }
+
+  fun write(buffer: Buffer) {
+    buffer.writeBoolean(isPresent)
+    if (isPresent) {
+      itemStack!!.write(buffer)
+    }
   }
 }

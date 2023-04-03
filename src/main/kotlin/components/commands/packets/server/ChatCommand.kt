@@ -29,7 +29,7 @@ class ChatCommand(
     command = reader.readString()
     timestamp = reader.readLong()
     salt = reader.readLong()
-    signatures = List(reader.readVarInt()) {
+    signatures = reader.readArray {
       ArgumentSignature(
         name = reader.readString(),
         signature = reader.readByteArray(256),

@@ -3,7 +3,7 @@ import components.commands.Commands
 import components.inventoryTracker.InventoryTracker
 import components.noRain.NoRain
 import components.regions.RegionsComponent
-import components.tabListDecorations.StatusResponseComponent
+import components.statusResponse.StatusResponseComponent
 import components.tabListDecorations.TabListDecorations
 import components.userOutput.UserOutput
 import java.util.*

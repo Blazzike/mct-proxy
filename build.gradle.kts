@@ -15,7 +15,7 @@ repositories {
 dependencies {
   testImplementation(kotlin("test"))
   implementation(kotlin("reflect"))
-  implementation("org.json:json:20220924")
+  implementation("com.google.code.gson:gson:2.10.1")
   implementation("net.benwoodworth.knbt:knbt:0.11.3")
 }
 

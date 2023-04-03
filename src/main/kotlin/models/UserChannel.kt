@@ -1,8 +1,10 @@
 package models
 
+import api.EventEmitter
 import api.users
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import keyPair
-import org.json.JSONObject
 import packets.PacketState
 import packets.client.*
 import packets.server.EncryptionResponse
@@ -12,6 +14,7 @@ import packets.server.StatusRequest
 import util.Reader
 import util.Writer
 import util.uuidFromString
+import java.io.EOFException
 import java.math.BigInteger
 import java.net.HttpURLConnection
 import java.net.Socket
@@ -39,7 +42,10 @@ class UserChannel(
   var uuid: UUID? = null
   var properties: List<Property>? = null
 
+  override val onDisconnect = object : EventEmitter<DisconnectEvent>() {}
+
   fun init() {
+    println("${socket.inetAddress.hostAddress} connected")
     isConnected = true
     packetState = PacketState.LOGIN
 
@@ -77,17 +83,17 @@ class UserChannel(
     hasJoinedConn.connect()
 
     // parse JSON
-    val json = JSONObject(hasJoinedConn.inputStream.bufferedReader().readText())
+    val json = Gson().fromJson(hasJoinedConn.inputStream.bufferedReader().readText(), JsonObject::class.java)
 
-    name = json.getString("name")
-    uuid = uuidFromString(json.getString("id"))
+    name = json.get("name").asString
+    uuid = uuidFromString(json.get("id").asString)
 
-    properties = json.getJSONArray("properties").map {
-      val prop = it as JSONObject
+    properties = json.getAsJsonArray("properties").map {
+      val prop = it as JsonObject
       Property(
-        name = prop.getString("name"),
-        value = prop.getString("value"),
-        signature = prop.optString("signature")
+        name = prop.get("name").asString,
+        value = prop.get("value").asString,
+        signature = prop.get("signature").asString ?: ""
       )
     }
 
@@ -111,13 +117,21 @@ class UserChannel(
     if (vanillaChannel!!.socket != null) {
       vanillaChannel!!.socket!!.close()
     }
+
     users.remove(name!!)
   }
 
   fun handle() {
     val handshake = reader.expectPacket(Handshake)
     if (handshake.nextState == 1) {
-      this.handleStatus()
+      println("${socket.inetAddress.hostAddress} pinged")
+
+      try {
+        this.handleStatus()
+      } catch (e: EOFException) {
+        e.printStackTrace()
+        // TODO add debug
+      }
     } else {
       this.init()
     }

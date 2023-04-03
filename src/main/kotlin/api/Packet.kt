@@ -34,7 +34,8 @@ class PacketInterceptorEvent<P : Packet>(
 
 class PacketInterceptor<P : Packet>(
   val packetInfo: PacketInfo<P>,
-  val callback: (packet: PacketInterceptorEvent<*>) -> Unit
+  val callback: (packet: PacketInterceptorEvent<*>) -> Unit,
+  val packetFormation: PacketFormation
 ) {
   override fun toString(): String {
     return "PacketInterceptor(packetInfo=$packetInfo, callback=$callback)"
@@ -71,14 +72,28 @@ object PacketInterceptorManager {
     if (packetInterceptors != null) {
       val reader = Reader(packetData.inputStream())
       val packet = packetInterceptors[0].packetInfo.packetClass
-      val packetInstance = packet.createInstance().read(reader)
+
+      val packetInstance: Packet
+      try {
+        packetInstance = packet.createInstance().read(reader)
+      } catch (e: Exception) {
+        throw RuntimeException("Failed to read packet 0x${
+          packetInterceptors[0].packetInfo.id.toString(16)
+        } from ${
+          channel.javaClass.simpleName
+        }", e)
+      }
+
       val packetInterceptorEvent = PacketInterceptorEvent(
         packetInstance,
         if (channel is UserChannel) channel else channel.partner as UserChannel
       )
 
       packetInterceptors.forEach {
-        it.callback(packetInterceptorEvent)
+        when (it.packetFormation) {
+          PacketFormation.ANY, PacketFormation.NATURAL -> it.callback(packetInterceptorEvent)
+          else -> Unit
+        }
       }
 
       if (packetInterceptorEvent.shouldCancel) {
@@ -109,7 +124,10 @@ object PacketInterceptorManager {
     if (packetInterceptors != null) {
       val packetInterceptorEvent = PacketInterceptorEvent(packet, channel as UserChannel)
       packetInterceptors.forEach {
-        it.callback(packetInterceptorEvent)
+        when (it.packetFormation) {
+          PacketFormation.ANY, PacketFormation.PROXY -> it.callback(packetInterceptorEvent)
+          else -> Unit
+        }
       }
 
       if (packetInterceptorEvent.shouldCancel) {
@@ -129,9 +147,20 @@ object PacketInterceptorManager {
   }
 }
 
-inline fun <reified P : Packet> addPacketInterceptor(packetInfo: PacketInfo<P>, noinline callback: PacketInterceptorCallback<P>) {
+enum class PacketFormation {
+  NATURAL,
+  PROXY,
+  ANY,
+}
+
+inline fun <reified P : Packet> addPacketInterceptor(
+  packetInfo: PacketInfo<P>,
+  packetFormation: PacketFormation = PacketFormation.NATURAL,
+  noinline callback: PacketInterceptorCallback<P>
+) {
   PacketInterceptorManager.add(PacketInterceptor(
     packetInfo = packetInfo,
+    packetFormation = packetFormation,
     callback = callback as (packet: PacketInterceptorEvent<*>) -> Unit
   ))
 }
