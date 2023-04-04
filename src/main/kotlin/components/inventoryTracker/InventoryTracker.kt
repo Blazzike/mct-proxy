@@ -16,9 +16,10 @@ import components.inventoryTracker.packets.server.SetHeldItemServerBound
 import components.regions.packets.server.PlayerAction
 import models.UserChannel
 import packets.client.LoginSuccess
+import java.util.*
 
 object InventoryTracker : Component() {
-  val inventorySessions = hashMapOf<UserChannel, InventorySession>()
+  val inventorySessions = WeakHashMap<UserChannel, InventorySession>()
 
   override fun enable() {
     addPacketInterceptor(LoginSuccess, PacketFormation.PROXY) { e ->

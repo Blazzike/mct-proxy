@@ -38,7 +38,7 @@ class MCText(vararg parts: Any) {
     LIGHT_PURPLE("light_purple", "d"),
     YELLOW("yellow", "e"),
     WHITE("white", "f"),
-    RESET(null, "r");
+    RESET(null, "r"),
   }
 
   enum class ClickAction(val value: String) {
@@ -119,7 +119,7 @@ class MCText(vararg parts: Any) {
             if (isStrikethrough) addProperty("strikethrough", true)
             if (isObfuscated) addProperty("obfuscated", true)
 
-            if (color != null) addProperty("color", color!!.value)
+            if (color != null && color!!.value != null) addProperty("color", color!!.value)
 
             if (clickEvent != null) {
               add("clickEvent", JsonObject().apply {

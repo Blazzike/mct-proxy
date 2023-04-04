@@ -87,7 +87,7 @@ class RootNode(
 class LiteralNode(
   val name: String,
   isExecutable: Boolean,
-  children: MutableList<Int>,
+  children: MutableList<Int> = mutableListOf(),
   val redirectNode: Int? = null,
 ) : Node(
   nodeType = NodeType.LITERAL,

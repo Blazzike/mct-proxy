@@ -9,6 +9,21 @@ import kotlin.concurrent.thread
 
 var keyPair: KeyPair? = null
 
+/**
+ * TODO
+ *
+ * - afk
+ * - back
+ * - invsee
+ * - kick
+ * - ban
+ * - list/online
+ * - lookup
+ * - msg/pm/r/whisper
+ * - mute
+ * - shrug
+ */
+
 fun main() {
   KeyPairGenerator.getInstance("RSA").apply {
     initialize(1024)

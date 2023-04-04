@@ -142,8 +142,8 @@ open class Writer(var outputStream: OutputStream) {
     writeLong(double.toRawBits())
   }
 
-  fun <T> writeArray(slotData: List<T>, transform: (T) -> Unit) {
-    writeVarInt(slotData.size)
-    slotData.forEach { transform(it) }
+  fun <T> writeArray(list: List<T>, transform: (T) -> Unit) {
+    writeVarInt(list.size)
+    list.forEach { transform(it) }
   }
 }
