@@ -1,5 +1,6 @@
 package models
 
+import Server
 import api.EventEmitter
 import api.users
 import com.google.gson.Gson
@@ -28,7 +29,8 @@ import kotlin.concurrent.thread
 class UserChannel(
   override val socket: Socket,
   override val writer: Writer,
-  override val reader: Reader
+  override val reader: Reader,
+  var currentServer: Server
 ) : Channel {
   var isConnected = false
 
@@ -108,7 +110,7 @@ class UserChannel(
     vanillaChannel = VanillaChannel(this)
     thread {
       vanillaChannel!!.init()
-      socket.close()
+//      socket.close()
     }
 
     users[name!!] = this
@@ -152,5 +154,17 @@ class UserChannel(
     PingResponse(payload = pingRequest.payload).write(this)
 
     socket.close()
+  }
+
+  fun goto(server: Server) {
+    if (server == currentServer) throw IllegalArgumentException("Cannot switch to the same server")
+
+    vanillaChannel!!.socket!!.close()
+    this.currentServer = server
+    vanillaChannel = VanillaChannel(this)
+    thread {
+      vanillaChannel!!.init(true)
+//      socket.close()
+    }
   }
 }

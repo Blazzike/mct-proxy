@@ -45,7 +45,8 @@ fun main() {
       UserChannel(
         socket = socket,
         reader = Reader(socket.getInputStream()),
-        writer = Writer(socket.getOutputStream())
+        writer = Writer(socket.getOutputStream()),
+        currentServer = SERVERS[0]
       ).handle()
     }
   }

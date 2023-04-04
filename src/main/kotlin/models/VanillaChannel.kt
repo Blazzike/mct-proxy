@@ -12,7 +12,7 @@ import util.Reader
 import util.Writer
 import java.net.Socket
 
-class VanillaChannel(private val userChannel: UserChannel) : Channel {
+class VanillaChannel(val userChannel: UserChannel) : Channel {
   override var socket: Socket? = null
   override lateinit var reader: Reader
   override lateinit var writer: Writer
@@ -23,8 +23,10 @@ class VanillaChannel(private val userChannel: UserChannel) : Channel {
   override val partner: Channel
     get() = userChannel
 
-  fun init() {
-    socket = Socket("localhost", 25566)
+  fun init(shouldSkipFirstPacket: Boolean = false) {
+    val server = userChannel.currentServer
+
+    socket = Socket("localhost", server.port)
     reader = Reader(socket!!.getInputStream())
     writer = Writer(socket!!.getOutputStream())
 
@@ -38,7 +40,7 @@ class VanillaChannel(private val userChannel: UserChannel) : Channel {
     Handshake(
       protocolVersion = PROTOCOL_VERSION,
       serverAddress = serverAddressParts.joinToString("\u0000"),
-      serverPort = 25566,
+      serverPort = server.port.toShort(),
       nextState = 2
     ).write(this)
 
@@ -51,6 +53,11 @@ class VanillaChannel(private val userChannel: UserChannel) : Channel {
     reader.expectPacket(LoginSuccess)
 
     packetState = PacketState.PLAY
+
+    if (shouldSkipFirstPacket) {
+      val header = reader.readHeader()
+      reader.inputStream.skip(header.remainingBytes.toLong())
+    }
 
     try {
       this.runMirror()

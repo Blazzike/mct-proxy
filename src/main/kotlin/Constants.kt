@@ -1,5 +1,6 @@
 import api.Component
 import components.commands.Commands
+import components.gotoComponent.Goto
 import components.inventoryTracker.InventoryTracker
 import components.noRain.NoRain
 import components.regions.RegionsComponent
@@ -16,7 +17,8 @@ val COMPONENTS = listOf(
   StatusResponseComponent,
   NoRain,
   InventoryTracker,
-  RegionsComponent
+  RegionsComponent,
+  Goto,
 )
 
 fun <T : Component> getComponent(clazz: KClass<out T>): T {
@@ -27,6 +29,19 @@ fun <T : Component> getComponent(clazz: KClass<out T>): T {
 
 const val PROTOCOL_VERSION = 761
 const val VERSION = "1.19.3"
+
+interface Server {
+  val name: String
+  val port: Int
+}
+
+val SERVERS = listOf(object : Server {
+  override val name = "Old"
+  override val port = 25566
+}, object : Server {
+  override val name = "New"
+  override val port = 25567
+})
 
 object Constants {
   val SERVER_ICON: String = Base64.getEncoder().encodeToString(
