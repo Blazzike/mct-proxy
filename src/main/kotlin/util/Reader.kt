@@ -216,4 +216,18 @@ class Reader(var inputStream: InputStream) {
   inline fun <reified T> readArray(length: Int = readVarInt(), transform: () -> T): List<T> {
     return List(length) { transform() }
   }
+
+  fun readBitSet(): BitSet {
+    val length = readVarInt()
+    val bytes = readByteArray(length)
+    val bitSet = BitSet(length * 8)
+    for (i in 0 until length) {
+      for (j in 0 until 8) {
+        if (bytes[i].toInt() and (1 shl j) != 0) {
+          bitSet.set(i * 8 + j)
+        }
+      }
+    }
+    return bitSet
+  }
 }

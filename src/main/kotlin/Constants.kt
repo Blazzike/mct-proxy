@@ -1,4 +1,5 @@
 import api.Component
+import components.chat.Chat
 import components.commands.Commands
 import components.gotoComponent.Goto
 import components.inventoryTracker.InventoryTracker
@@ -19,6 +20,7 @@ val COMPONENTS = listOf(
   InventoryTracker,
   RegionsComponent,
   Goto,
+  Chat,
 )
 
 fun <T : Component> getComponent(clazz: KClass<out T>): T {
